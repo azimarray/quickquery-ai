@@ -1,0 +1,5 @@
+- DONE: All files built (app.py, backend/ llm_router, db_manager, rag_manager, demo_seeder, theme, requirements).
+- DONE: Agent loop with SQL + PDF tools, multi-step calls, 1-step SQL self-correction, read-only guardrail.
+- DONE: Demo seeding (30-row employees table + 5-page handbook PDF), auto-indexed on first run.
+- FIXED: Gemini 3.8 Flash stuck at step 1 (timeout 90s, no temp 0 for Gemini 3, keep thought signatures).
+- NEXT: `pip install -U -r requirements.txt`, rerun, try the 3 starter prompts with each model, then deploy.
