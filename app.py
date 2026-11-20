@@ -111,7 +111,7 @@ with st.sidebar:
 
     if db_type == "SQLite":
         db_url = build_url("SQLite", sqlite_path=DB_PATH)
-        st.caption("`sqlite:///data/demo_hr.db` · zero-setup demo")
+        st.caption("`demo_hr.db` · zero-setup demo")
     else:
         prefix = "MYSQL" if db_type == "MySQL" else "POSTGRES"
         with st.form(f"conn_{db_type}"):
