@@ -32,10 +32,9 @@ st.markdown("""
 .block-container {max-width:1000px; padding-top:2rem;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0;}
 .qq-brand span {color:#3B82F6;}
-.qq-sub {color:#94A3B8; font-size:0.78rem; margin:0 0 0.6rem;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
            font-weight:600; margin:1.2rem 0 0.35rem;}
-.qq-badge {display:inline-block; padding:3px 10px; border-radius:999px; font-size:0.74rem; font-weight:500;
+.qq-badge {display:block; box-sizing:border-box; width:100%; padding:7px 14px; border-radius:8px; font-size:0.74rem; font-weight:500;
            margin:0.2rem 0 0.5rem;}
 .qq-badge.ok {background:rgba(16,185,129,.12); color:#34D399; border:1px solid rgba(16,185,129,.35);}
 .qq-badge.err {background:rgba(239,68,68,.12); color:#F87171; border:1px solid rgba(239,68,68,.35);}
@@ -97,20 +96,17 @@ def friendly_error(e: Exception, model_label: str) -> str:
     msg = str(e).strip().splitlines()[0][:300] if str(e).strip() else type(e).__name__
     if "auth" in type(e).__name__.lower() or "api key" in msg.lower() or "api_key" in msg.lower():
         return (f"**Missing or invalid API key for {model_label}.** Add `{KEY_ENV[model_label]}` to your `.env` "
-                f"(or Streamlit secrets), or paste a key in the sidebar.")
+                f"(or Streamlit secrets), then restart the app.")
     return f"**Something went wrong:** {msg}"
 
 
 # ---------------- sidebar ----------------
 with st.sidebar:
-    st.markdown('<p class="qq-brand">⚡ Quick<span>Query</span> AI</p>'
-                '<p class="qq-sub">Hybrid Text-to-SQL & Document Intelligence</p>', unsafe_allow_html=True)
+    st.markdown('<p class="qq-brand">⚡ Quick<span>Query</span> AI</p>', unsafe_allow_html=True)
 
     st.markdown('<div class="qq-label">Model & Database</div>', unsafe_allow_html=True)
     model_label = st.selectbox("LLM", list(MODELS), index=list(MODELS).index(DEFAULT_MODEL))
-    api_key = st.text_input("API key override (optional)", type="password",
-                            placeholder=f"Uses {KEY_ENV[model_label]} from .env")
-    db_type = st.selectbox("Database", list(DB_TYPES))
+    db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
         db_url = build_url("SQLite", sqlite_path=DB_PATH)
@@ -249,7 +245,7 @@ if prompt:
                     status.update(label=s + "…")
                     status.write(s)
                 try:
-                    agent = QueryAgent(model_label, db, rag, api_key=api_key.strip() or None)
+                    agent = QueryAgent(model_label, db, rag, api_key=None)
                     result = agent.run(prompt, history=history, on_step=on_step)
                     status.update(label=f"Done · {result.steps} step(s)", state="complete")
                 except Exception as e:  # noqa: BLE001
