@@ -29,7 +29,7 @@ STARTERS = [
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {background:#111827; border-right:1px solid #1F2937;}
-.block-container {max-width:1000px; padding-top:2.9rem;}
+.block-container {max-width:1000px; padding-top:49px;}
 [data-testid="stHeader"] {background:transparent;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0;}
 .qq-brand span {color:#3B82F6;}
