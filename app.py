@@ -97,6 +97,7 @@ ss = st.session_state
 ss.setdefault("messages", [])
 ss.setdefault("indexed_uploads", set())
 ss.setdefault("uploader_key", 0)
+ss.setdefault("api_keys", {})
 
 
 def friendly_error(e: Exception, model_label: str) -> str:
@@ -113,10 +114,12 @@ with st.sidebar:
 
     st.markdown('<div class="qq-label">Model & Database</div>', unsafe_allow_html=True)
     model_label = st.selectbox("LLM", list(MODELS), index=list(MODELS).index(DEFAULT_MODEL))
-    key_source = st.selectbox("API KEY", ["Default (.env)", "Custom key"])
-    api_key = ""
-    if key_source == "Custom key":
-        api_key = st.text_input(f"{model_label} key", type="password")
+    # One key box per model; the agent always uses the key that matches the chosen LLM (empty = .env key).
+    key_for = st.selectbox("API KEY", list(MODELS), index=list(MODELS).index(model_label),
+                           format_func=lambda m: f"{m} key")
+    ss.api_keys[key_for] = st.text_input(f"{key_for} key", value=ss.api_keys.get(key_for, ""),
+                                         type="password", label_visibility="collapsed")
+    api_key = ss.api_keys.get(model_label, "")
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
