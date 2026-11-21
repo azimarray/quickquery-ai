@@ -111,6 +111,9 @@ class QueryAgent:
         # Gemini 3 models can loop (look "stuck") below temperature 1.0, so leave them on their default.
         if "gemini-3" not in self.model:
             kwargs.setdefault("temperature", 0)
+        else:
+            # Gemini 3 "thinks" at a high level by default, which can take over a minute per step.
+            kwargs.setdefault("reasoning_effort", "low")
         # Fail with a clear error after 90s instead of hanging forever.
         return litellm.completion(model=self.model, messages=messages, api_key=self.api_key,
                                   timeout=90, num_retries=1, **kwargs)
