@@ -292,7 +292,7 @@ with st.sidebar:
         icon = "📊" if kind == "table" else "📄"
         c_d.markdown(f'<div class="qq-doc" title="{html.escape(tip)}">{icon} {html.escape(name)}</div>',
                      unsafe_allow_html=True)
-        if c_x.button("✕", key=f"del_doc_{i}", help="Remove this document"):
+        if c_x.button("✕", key=f"del_doc_{i}", help="Remove this document", width="stretch"):
             confirm_remove_doc(kind, name)
     if ss.sheet_tables and db_type != "SQLite":
         st.caption("Spreadsheets are added to the SQLite demo database. Select SQLite to query them.")
@@ -308,7 +308,7 @@ with st.sidebar:
         c_q, c_x = st.columns([6, 1], gap=None, vertical_alignment="top")
         if c_q.button(_short(q, 40), key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
-        if c_x.button("✕", key=f"del_{i}", help="Delete this question"):
+        if c_x.button("✕", key=f"del_{i}", help="Delete this question", width="stretch"):
             confirm_delete_one(i)
     if past and st.button("Delete all", key="del_all", width="stretch"):
         confirm_delete_all()
