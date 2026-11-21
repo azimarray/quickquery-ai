@@ -116,7 +116,7 @@ with st.sidebar:
     key_source = st.selectbox("API KEY", ["Default (.env)", "Custom key"])
     api_key = ""
     if key_source == "Custom key":
-        api_key = st.text_input("Custom key", type="password", label_visibility="collapsed")
+        api_key = st.text_input(f"{model_label} key", type="password")
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
