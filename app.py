@@ -40,15 +40,17 @@ st.markdown("""
 [data-testid="stSidebar"] [data-baseweb="input"],
 [data-testid="stSidebar"] [data-testid="stExpander"] details,
 [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"],
-[data-testid="stSidebar"] .stButton > button,
+[data-testid="stSidebar"] .stButton button,
 .qq-doc {background:#1F2937 !important; border:1px solid #374151 !important; border-radius:8px !important;}
 [data-testid="stSidebar"] [data-baseweb="base-input"] {background:transparent !important;}
 [data-testid="stSidebar"] [data-testid="stExpander"] summary {background:transparent !important;}
 [data-testid="stSidebar"] [data-baseweb="input"]:focus-within {border-color:#3B82F6 !important;}
-[data-testid="stSidebar"] .stButton > button {height:40px; min-height:40px; color:#CBD5E1; font-size:0.85rem;}
-[data-testid="stSidebar"] .stButton > button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
+[data-testid="stSidebar"] .stButton button {height:40px; min-height:40px; color:#CBD5E1; font-size:0.85rem;}
+[data-testid="stSidebar"] .stButton button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
 /* History and document rows: text part + ✕ part joined into one bar */
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) {gap:0 !important;}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdown"] {margin:0 !important;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left; padding:0 12px;
     border-right:none !important; border-radius:8px 0 0 8px !important;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {width:100%; padding:0; color:#64748B;
@@ -287,7 +289,7 @@ with st.sidebar:
     rows = [("pdf", d["name"], d["name"]) for d in docs]
     rows += [("table", t, f"{t} · {n} rows") for ts in ss.sheet_tables.values() for t, n in ts]
     for i, (kind, name, tip) in enumerate(rows):
-        c_d, c_x = st.columns([6, 1], gap="small", vertical_alignment="center")
+        c_d, c_x = st.columns([6, 1], gap="small", vertical_alignment="top")
         icon = "📊" if kind == "table" else "📄"
         c_d.markdown(f'<div class="qq-doc" title="{html.escape(tip)}">{icon} {html.escape(name)}</div>',
                      unsafe_allow_html=True)
@@ -304,7 +306,7 @@ with st.sidebar:
         st.caption("Your questions will appear here.")
     for i, m in reversed(past):
         q = m["content"]
-        c_q, c_x = st.columns([6, 1], gap="small", vertical_alignment="center")
+        c_q, c_x = st.columns([6, 1], gap="small", vertical_alignment="top")
         if c_q.button(_short(q, 40), key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
         if c_x.button("✕", key=f"del_{i}", help="Delete this question"):
