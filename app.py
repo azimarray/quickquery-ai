@@ -39,12 +39,13 @@ st.markdown("""
     height:40px; min-height:40px; padding:0 12px; font-size:0.85rem; border-color:#1F2937; color:#CBD5E1;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {border:none; background:transparent;
     color:#64748B; height:40px; min-height:40px; padding:0 6px; font-size:0.85rem;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {min-height:40px; padding:4px 6px 4px 12px;
-    border-radius:8px; align-items:center;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] > :not(:first-child) {display:none;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] > :first-child {margin:0;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] svg {width:22px; height:22px;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {height:30px; min-height:30px; padding:0 12px;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {flex-direction:row !important;
+    align-items:center !important; justify-content:flex-start !important; gap:0 !important;
+    min-height:40px !important; padding:4px !important; border-radius:8px;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] {display:none !important;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] > span {margin:0 !important; align-self:center !important;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {height:30px !important; min-height:30px !important;
+    padding:0 12px !important;}
 .qq-hint {color:#64748B; font-size:0.74rem; margin:-0.6rem 0 0.5rem 2px;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
