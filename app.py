@@ -49,6 +49,10 @@ st.markdown("""
 [data-testid="stSidebar"] .stButton button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
 /* History and document rows: text part + ✕ part joined into one bar */
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) {gap:0 !important;}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) > [data-testid="stColumn"]:first-child {
+    flex:1 1 auto !important; width:auto !important; min-width:0 !important;}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) > [data-testid="stColumn"]:last-child {
+    flex:0 0 40px !important; width:40px !important; min-width:40px !important;}
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdownContainer"],
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdown"] {margin:0 !important;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left; padding:0 12px;
