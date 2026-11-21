@@ -1,7 +1,11 @@
 """QuickQuery AI - Hybrid Text-to-SQL & Document Intelligence Engine (Streamlit UI)."""
+import io
 import os
+import re
 
+import pandas as pd
 import streamlit as st
+from fpdf import FPDF
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,9 +33,9 @@ STARTERS = [
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {background:#111827; border-right:1px solid #1F2937;}
-.block-container {max-width:1000px; padding-top:49px;}
+.block-container {max-width:1000px; padding-top:4.5rem;}
 [data-testid="stHeader"] {background:transparent;}
-.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0;}
+.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0; padding-top:23px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
            font-weight:600; margin:1.2rem 0 0.35rem;}
@@ -97,7 +101,7 @@ def friendly_error(e: Exception, model_label: str) -> str:
     msg = str(e).strip().splitlines()[0][:300] if str(e).strip() else type(e).__name__
     if "auth" in type(e).__name__.lower() or "api key" in msg.lower() or "api_key" in msg.lower():
         return (f"**Missing or invalid API key for {model_label}.** Add `{KEY_ENV[model_label]}` to your `.env` "
-                f"(or Streamlit secrets), then restart the app.")
+                f"(or Streamlit secrets), or paste a key in the API KEY box.")
     return f"**Something went wrong:** {msg}"
 
 
@@ -107,11 +111,12 @@ with st.sidebar:
 
     st.markdown('<div class="qq-label">Model & Database</div>', unsafe_allow_html=True)
     model_label = st.selectbox("LLM", list(MODELS), index=list(MODELS).index(DEFAULT_MODEL))
+    api_key = st.text_input("API KEY", type="password",
+                            placeholder=f"Optional · uses {KEY_ENV[model_label]} from .env")
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
         db_url = build_url("SQLite", sqlite_path=DB_PATH)
-        st.caption("`demo_hr.db` · zero-setup demo")
     else:
         prefix = "MYSQL" if db_type == "MySQL" else "POSTGRES"
         with st.form(f"conn_{db_type}"):
@@ -182,14 +187,78 @@ with st.sidebar:
         st.rerun()
 
 
+# ---------------- downloads ----------------
+def _plain(text: str) -> str:
+    """Markdown answer -> plain text, limited to characters the built-in PDF font supports."""
+    text = re.sub(r"[*#`]", "", text or "")
+    for a, b in {"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2013": "-", "\u2014": "-",
+                 "\u2022": "-", "\u2026": "...", "\u2192": "->", "\u00a0": " "}.items():
+        text = text.replace(a, b)
+    return text.encode("latin-1", "replace").decode("latin-1")
+
+
+def to_text(question: str, result: AgentResult, df: pd.DataFrame | None) -> bytes:
+    parts = [f"Question: {question}", "", f"Answer ({result.model}):", _plain(result.answer)]
+    if df is not None:
+        parts += ["", "Data:", df.to_string(index=False)]
+    return "\n".join(parts).encode("utf-8")
+
+
+def to_excel(df: pd.DataFrame) -> bytes:
+    buf = io.BytesIO()
+    df.to_excel(buf, index=False, sheet_name="Results")
+    return buf.getvalue()
+
+
+def to_pdf(question: str, result: AgentResult, df: pd.DataFrame | None) -> bytes:
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 15)
+    pdf.cell(0, 9, "QuickQuery AI - Answer", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "I", 10)
+    pdf.multi_cell(0, 6, _plain(f"Question: {question}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.multi_cell(0, 6, _plain(result.answer), new_x="LMARGIN", new_y="NEXT")
+    if df is not None and not df.empty:
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "", 8)
+        with pdf.table(text_align="LEFT", line_height=5) as table:
+            for values in [list(df.columns)] + df.head(500).values.tolist():
+                row = table.row()
+                for v in values:
+                    row.cell(_plain(str(v)))
+    return bytes(pdf.output())
+
+
+def render_downloads(question: str, result: AgentResult, df: pd.DataFrame | None, key: str) -> None:
+    cols = st.columns(4)
+    if df is not None:
+        cols[0].download_button("CSV", df.to_csv(index=False).encode("utf-8"), "quickquery_results.csv",
+                                "text/csv", key=f"csv_{key}", icon=":material/download:", width="stretch")
+        cols[1].download_button("Excel", to_excel(df), "quickquery_results.xlsx",
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key=f"xlsx_{key}", icon=":material/download:", width="stretch")
+    cols[2].download_button("PDF", to_pdf(question, result, df), "quickquery_answer.pdf", "application/pdf",
+                            key=f"pdf_{key}", icon=":material/download:", width="stretch")
+    cols[3].download_button("Text", to_text(question, result, df), "quickquery_answer.txt", "text/plain",
+                            key=f"txt_{key}", icon=":material/download:", width="stretch")
+
+
 # ---------------- main workspace ----------------
-def render_result(result: AgentResult) -> None:
+def render_result(result: AgentResult, question: str = "", key: str = "0") -> None:
     st.markdown(result.answer)
-    shown = set()
+    shown, main_df = set(), None
     for run in result.sql_runs:
         if run.ok and run.df is not None and not run.df.empty and run.sql not in shown:
             shown.add(run.sql)
+            main_df = run.df
             st.dataframe(run.df, width="stretch", hide_index=True)
+    try:
+        render_downloads(question, result, main_df, key)
+    except Exception as e:  # noqa: BLE001 - a download problem must never hide the answer
+        st.caption(f"Downloads unavailable: {e}")
     with st.expander("View SQL Query & PDF Sources"):
         st.markdown(f"**Model:** {result.model} &nbsp;·&nbsp; **Steps:** {result.steps}")
         st.markdown("**SQL executed**")
@@ -210,7 +279,7 @@ def render_result(result: AgentResult) -> None:
 
 
 st.markdown('<div class="qq-hero"><h1>QuickQuery AI</h1>'
-            '<p>Hybrid Text-to-SQL & Document Intelligence Engine</p></div>'
+            '<p>Hybrid PDF-to-SQL & Document Intelligence Engine</p></div>'
             f'<span class="qq-pill">🧠 {model_label}</span><span class="qq-pill">🗄️ {db_type}</span>'
             f'<span class="qq-pill">📄 {len(docs)} PDF(s)</span>', unsafe_allow_html=True)
 
@@ -219,10 +288,10 @@ with chat:
     if not ss.messages:
         st.markdown('<div class="qq-empty">Ask anything about your database or documents in plain English.<br>'
                     'Try one of the prompts below.</div>', unsafe_allow_html=True)
-    for m in ss.messages:
+    for i, m in enumerate(ss.messages):
         with st.chat_message(m["role"], avatar="⚡" if m["role"] == "assistant" else None):
             if m.get("result"):
-                render_result(m["result"])
+                render_result(m["result"], m.get("question", ""), key=str(i))
             else:
                 st.markdown(m["content"])
 
@@ -246,7 +315,7 @@ if prompt:
                     status.update(label=s + "…")
                     status.write(s)
                 try:
-                    agent = QueryAgent(model_label, db, rag, api_key=None)
+                    agent = QueryAgent(model_label, db, rag, api_key=api_key.strip() or None)
                     result = agent.run(prompt, history=history, on_step=on_step)
                     status.update(label=f"Done · {result.steps} step(s)", state="complete")
                 except Exception as e:  # noqa: BLE001
@@ -254,8 +323,9 @@ if prompt:
                     error_text = friendly_error(e, model_label)
                     status.update(label="Failed", state="error")
             if result:
-                render_result(result)
-                ss.messages.append({"role": "assistant", "content": result.answer, "result": result})
+                render_result(result, prompt, key=str(len(ss.messages)))
+                ss.messages.append({"role": "assistant", "content": result.answer, "result": result,
+                                    "question": prompt})
             else:
                 st.markdown(error_text)
                 ss.messages.append({"role": "assistant", "content": error_text})

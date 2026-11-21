@@ -19,8 +19,8 @@ litellm.suppress_debug_info = True
 
 MODELS = {
     "Claude Sonnet 4.5": "anthropic/claude-sonnet-4-5",
-    "GPT-4o": "gpt-4o",
     "Gemini 3.8 Flash": "gemini/gemini-3.8-flash",
+    "GPT-4o": "gpt-4o",
 }
 KEY_ENV = {
     "Claude Sonnet 4.5": "ANTHROPIC_API_KEY",
