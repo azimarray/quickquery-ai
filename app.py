@@ -33,7 +33,7 @@ STARTERS = [
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {background:#111827; border-right:1px solid #1F2937;}
-.block-container {max-width:1000px; padding-top:24px;}
+.block-container {max-width:none; padding-top:24px; padding-left:3rem; padding-right:3rem;}
 [data-testid="stSidebarHeader"] {height:60px; min-height:60px; padding-top:0; padding-bottom:0; position:relative; z-index:2;}
 [data-testid="stSidebarUserContent"] {padding-top:0; margin-top:-60px;}
 [data-testid="stHeader"] {background:transparent;}
