@@ -43,6 +43,7 @@ st.markdown("""
 [data-testid="stSidebar"] .stButton > button,
 .qq-doc {background:#1F2937 !important; border:1px solid #374151 !important; border-radius:8px !important;}
 [data-testid="stSidebar"] [data-baseweb="base-input"] {background:transparent !important;}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {background:transparent !important;}
 [data-testid="stSidebar"] [data-baseweb="input"]:focus-within {border-color:#3B82F6 !important;}
 [data-testid="stSidebar"] .stButton > button {height:40px; min-height:40px; color:#CBD5E1; font-size:0.85rem;}
 [data-testid="stSidebar"] .stButton > button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
