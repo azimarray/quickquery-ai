@@ -20,18 +20,17 @@ litellm.suppress_debug_info = True
 
 MODELS = {
     "GPT-OSS 120B (Groq)": "groq/openai/gpt-oss-120b",
-    "Claude Sonnet 4.5": "anthropic/claude-sonnet-4-5",
-    "Gemini 3.8 Flash": "gemini/gemini-3.8-flash",
-    "GPT-4o": "gpt-4o",
+    "Claude Sonnet 4.5 (Anthropic)": "anthropic/claude-sonnet-4-5",
+    "Gemini 3.8 Flash (Google)": "gemini/gemini-3.8-flash",
 }
 KEY_ENV = {
     "GPT-OSS 120B (Groq)": "GROQ_API_KEY",
-    "Claude Sonnet 4.5": "ANTHROPIC_API_KEY",
-    "GPT-4o": "OPENAI_API_KEY",
-    "Gemini 3.8 Flash": "GEMINI_API_KEY",
+    "Claude Sonnet 4.5 (Anthropic)": "ANTHROPIC_API_KEY",
+    "Gemini 3.8 Flash (Google)": "GEMINI_API_KEY",
 }
 DEFAULT_MODEL = "GPT-OSS 120B (Groq)"
 MAX_STEPS = 6        # LLM turns before we force a final answer
+HISTORY_MESSAGES = 20  # past chat messages the model sees on every request
 ROWS_TO_LLM = 25     # rows sent back to the model (the UI shows all rows); small = fits free-tier limits
 
 TOOLS = [
@@ -91,6 +90,25 @@ class AgentResult:
     pdf_hits: list[dict] = field(default_factory=list)
     steps: int = 0
     fallback_from: str | None = None    # model that failed before this one answered
+
+
+def memory_text(message: dict) -> str:
+    """Chat message -> compact text for the model, including the SQL and PDF pages behind past answers,
+    so follow-ups like "now only for Engineering" can build on them. Kept short for free-tier token limits."""
+    content = (message.get("content") or "").strip()
+    if message.get("role") == "user":
+        return content[:400]
+    result = message.get("result")
+    if result is None:
+        return content[:600]
+    parts = [content[:600]]
+    sqls = [r.sql for r in result.sql_runs if r.ok][-2:]
+    if sqls:
+        parts.append("[SQL used]\n" + "\n".join(s[:500] for s in sqls))
+    if result.pdf_hits:
+        refs = "; ".join(f"{h['source']} p.{h['page']}: {' '.join(h['text'].split())[:120]}" for h in result.pdf_hits[:3])
+        parts.append("[PDF context] " + refs)
+    return "\n\n".join(parts)
 
 
 def _short_error(e: Exception) -> str:
@@ -214,9 +232,10 @@ RULES
     def run(self, question: str, history: list[dict] | None = None,
             on_step: Callable[[str], None] = lambda _s: None) -> AgentResult:
         messages = [{"role": "system", "content": self._system_prompt()}]
-        for m in (history or [])[-6:]:
-            if m.get("content"):
-                messages.append({"role": m["role"], "content": m["content"]})
+        for m in (history or [])[-HISTORY_MESSAGES:]:
+            content = memory_text(m)
+            if content:
+                messages.append({"role": m["role"], "content": content})
         messages.append({"role": "user", "content": question})
         result = AgentResult(answer="", model=self.label)
 

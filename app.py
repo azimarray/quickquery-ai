@@ -33,6 +33,9 @@ st.markdown("""
 [data-testid="stSidebarUserContent"] {padding-top:0; margin-top:-60px;}
 [data-testid="stHeader"] {background:transparent;}
 [data-testid="InputInstructions"] {display:none;}
+[data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left;
+    min-height:0; padding:5px 10px; font-size:0.8rem; border-color:#1F2937; color:#CBD5E1;}
+[data-testid="stSidebar"] [class*="st-key-hist_"] {margin-bottom:-8px;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
@@ -183,6 +186,18 @@ with st.sidebar:
     if not docs:
         st.caption("No PDFs indexed yet.")
 
+    st.markdown('<div class="qq-label">Query History</div>', unsafe_allow_html=True)
+    past = [(i, m) for i, m in enumerate(ss.messages) if m["role"] == "user"]
+    if not past:
+        st.caption("Your questions will appear here.")
+    for i, m in reversed(past):
+        q = m["content"]
+        if st.button(q if len(q) <= 46 else q[:44] + "…", key=f"hist_{i}", help=q, width="stretch"):
+            ss.view_query = i
+    if past and st.button("Clear History", width="stretch"):
+        ss.messages = []
+        st.rerun()
+
     if st.button("Reset Demo Data", width="stretch"):
         if db is not None and db.dialect == "sqlite":
             db.dispose()
@@ -287,6 +302,23 @@ def render_result(result: AgentResult, question: str = "", key: str = "0") -> No
             st.caption(h["text"][:700] + ("…" if len(h["text"]) > 700 else ""))
 
 
+@st.dialog("Past query", width="large")
+def show_past_query(i: int) -> None:
+    st.markdown(f"**You asked:** {ss.messages[i]['content']}")
+    answer = ss.messages[i + 1] if i + 1 < len(ss.messages) else None
+    if answer is None:
+        st.caption("No answer was recorded for this question.")
+    elif answer.get("result"):
+        render_result(answer["result"], ss.messages[i]["content"], key=f"dlg_{i}")
+    else:
+        st.markdown(answer["content"])
+
+
+if ss.get("view_query") is not None:
+    idx = ss.pop("view_query")
+    if idx < len(ss.messages):
+        show_past_query(idx)
+
 st.markdown('<div class="qq-hero"><h1>QuickQuery AI</h1>'
             '<p>Hybrid PDF-to-SQL & Document Intelligence Engine</p></div>'
             f'<span class="qq-pill">🧠 {model_label}</span><span class="qq-pill">🗄️ {db_type}</span>'
@@ -313,7 +345,7 @@ for col, (tag, text) in zip(st.columns(3), STARTERS):
 
 prompt = st.chat_input("Ask about your data or documents…") or chip_prompt
 if prompt:
-    history = [{"role": m["role"], "content": m["content"]} for m in ss.messages]
+    history = list(ss.messages)  # llm_router keeps the last 20 and adds their SQL + PDF context
     ss.messages.append({"role": "user", "content": prompt})
     with chat:
         with st.chat_message("user"):
@@ -342,3 +374,4 @@ if prompt:
             else:
                 st.markdown(error_text)
                 ss.messages.append({"role": "assistant", "content": error_text})
+    st.rerun()  # refresh so the new question shows up in the sidebar Query History

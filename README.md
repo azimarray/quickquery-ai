@@ -1,7 +1,7 @@
 # ⚡ QuickQuery AI
 **Hybrid Text-to-SQL & Document Intelligence Engine** — ask one question, get an answer that combines your SQL database and your PDFs.
 
-Stack: Streamlit · LiteLLM (GPT-OSS 120B on Groq - free, default / Claude Sonnet 4.5 / Gemini 3.8 Flash / GPT-4o) · SQLAlchemy (SQLite / MySQL / PostgreSQL) · ChromaDB · pypdf.
+Stack: Streamlit · LiteLLM (GPT-OSS 120B on Groq - free, default / Claude Sonnet 4.5 (Anthropic) / Gemini 3.8 Flash (Google)) · SQLAlchemy (SQLite / MySQL / PostgreSQL) · ChromaDB · pypdf.
 
 ```
 app.py                    Streamlit UI (sidebar controls + chat workspace)
@@ -32,7 +32,6 @@ Then on https://share.streamlit.io → **Create app** → pick the repo, main fi
 ```toml
 GROQ_API_KEY = "gsk_..."
 ANTHROPIC_API_KEY = "sk-ant-..."
-OPENAI_API_KEY = "sk-..."
 GEMINI_API_KEY = "..."
 ```
 Demo data is regenerated automatically whenever the cloud container restarts.
