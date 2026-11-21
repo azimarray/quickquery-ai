@@ -33,11 +33,11 @@ STARTERS = [
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {background:#111827; border-right:1px solid #1F2937;}
-.block-container {max-width:1000px; padding-top:60px;}
-[data-testid="stSidebarHeader"] {height:60px; min-height:60px; padding-top:0; padding-bottom:0;}
-[data-testid="stSidebarUserContent"] {padding-top:0;}
+.block-container {max-width:1000px; padding-top:24px;}
+[data-testid="stSidebarHeader"] {height:60px; min-height:60px; padding-top:0; padding-bottom:0; position:relative; z-index:2;}
+[data-testid="stSidebarUserContent"] {padding-top:0; margin-top:-60px;}
 [data-testid="stHeader"] {background:transparent;}
-.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin:0; padding-top:3px;}
+.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
            font-weight:600; margin:1.2rem 0 0.35rem;}
@@ -52,7 +52,7 @@ st.markdown("""
 .qq-col {font-size:0.8rem; color:#CBD5E1; line-height:1.55;}
 .qq-col code {color:#93C5FD; background:transparent; padding:0;}
 .qq-col i {color:#64748B; font-style:normal; font-size:0.72rem;}
-.qq-hero h1 {font-size:1.9rem; font-weight:700; letter-spacing:-0.03em; line-height:1.3; margin:0; padding:0;}
+.qq-hero h1 {font-size:1.9rem; font-weight:700; letter-spacing:-0.03em; line-height:40px; margin:0; padding:0;}
 .qq-hero p {color:#94A3B8; margin:0.15rem 0 0.6rem;}
 .qq-pill {display:inline-block; background:#111827; border:1px solid #1F2937; color:#CBD5E1;
           border-radius:999px; padding:2px 10px; font-size:0.72rem; margin-right:6px;}
