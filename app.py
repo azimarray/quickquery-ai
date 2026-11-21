@@ -48,11 +48,6 @@ st.markdown("""
 [data-testid="stSidebar"] .stButton button {height:40px; min-height:40px; color:#CBD5E1; font-size:0.85rem;}
 [data-testid="stSidebar"] .stButton button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
 /* History and document rows: text part + ✕ part joined into one bar */
-[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) {gap:0 !important;}
-[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) > [data-testid="stColumn"]:first-child {
-    flex:1 1 auto !important; width:auto !important; min-width:0 !important;}
-[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) > [data-testid="stColumn"]:last-child {
-    flex:0 0 40px !important; width:40px !important; min-width:40px !important;}
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdownContainer"],
 [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) [data-testid="stMarkdown"] {margin:0 !important;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left; padding:0 12px;
@@ -293,7 +288,7 @@ with st.sidebar:
     rows = [("pdf", d["name"], d["name"]) for d in docs]
     rows += [("table", t, f"{t} · {n} rows") for ts in ss.sheet_tables.values() for t, n in ts]
     for i, (kind, name, tip) in enumerate(rows):
-        c_d, c_x = st.columns([6, 1], gap="small", vertical_alignment="top")
+        c_d, c_x = st.columns([6, 1], gap=None, vertical_alignment="top")
         icon = "📊" if kind == "table" else "📄"
         c_d.markdown(f'<div class="qq-doc" title="{html.escape(tip)}">{icon} {html.escape(name)}</div>',
                      unsafe_allow_html=True)
@@ -310,7 +305,7 @@ with st.sidebar:
         st.caption("Your questions will appear here.")
     for i, m in reversed(past):
         q = m["content"]
-        c_q, c_x = st.columns([6, 1], gap="small", vertical_alignment="top")
+        c_q, c_x = st.columns([6, 1], gap=None, vertical_alignment="top")
         if c_q.button(_short(q, 40), key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
         if c_x.button("✕", key=f"del_{i}", help="Delete this question"):
