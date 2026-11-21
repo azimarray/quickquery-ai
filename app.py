@@ -113,8 +113,10 @@ with st.sidebar:
 
     st.markdown('<div class="qq-label">Model & Database</div>', unsafe_allow_html=True)
     model_label = st.selectbox("LLM", list(MODELS), index=list(MODELS).index(DEFAULT_MODEL))
-    api_key = st.text_input("API KEY", type="password",
-                            placeholder=f"Optional · uses {KEY_ENV[model_label]} from .env")
+    key_source = st.selectbox("API KEY", ["Default (.env)", "Custom key"])
+    api_key = ""
+    if key_source == "Custom key":
+        api_key = st.text_input("Custom key", type="password", label_visibility="collapsed")
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
