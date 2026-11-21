@@ -180,3 +180,11 @@ def import_spreadsheet(data: bytes, filename: str, sqlite_path: Path | str,
             df.to_sql(table, conn, if_exists="replace", index=False)
             created.append((table, len(df)))
     return created
+
+
+def drop_table(sqlite_path: Path | str, table: str, protected: tuple[str, ...] = ("employees",)) -> None:
+    """Remove an uploaded spreadsheet table from the SQLite demo database."""
+    if table in protected:
+        raise ValueError(f"'{table}' is part of the demo data and can't be removed.")
+    with sqlite3.connect(str(sqlite_path)) as conn:
+        conn.execute(f'DROP TABLE IF EXISTS "{table.replace(chr(34), "")}"')

@@ -73,6 +73,9 @@ class RAGManager:
             s["chunks"] += 1
         return [{"name": n, "pages": len(s["pages"]), "chunks": s["chunks"]} for n, s in sorted(stats.items())]
 
+    def delete_document(self, name: str) -> None:
+        self.collection.delete(where={"source": name})
+
     def reset(self) -> None:
         try:
             self.client.delete_collection(COLLECTION)

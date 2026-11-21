@@ -17,7 +17,7 @@ try:  # Streamlit Community Cloud: expose secrets as env vars so LiteLLM finds t
 except Exception:
     pass
 
-from backend.db_manager import DB_TYPES, DEFAULT_PORTS, DBManager, build_url, import_spreadsheet  # noqa: E402
+from backend.db_manager import DB_TYPES, DEFAULT_PORTS, DBManager, build_url, drop_table, import_spreadsheet  # noqa: E402
 from backend.demo_answers import STARTERS, instant_answer  # noqa: E402
 from backend.demo_seeder import DB_PATH, PDF_PATH, ensure_demo_data, reset_demo_data  # noqa: E402
 from backend.llm_router import DEFAULT_MODEL, KEY_ENV, MODELS, AgentResult, run_with_fallback  # noqa: E402
@@ -57,7 +57,7 @@ st.markdown("""
 .qq-badge.err {background:rgba(239,68,68,.12); color:#F87171; border:1px solid rgba(239,68,68,.35);}
 .qq-badge.idle {background:rgba(148,163,184,.1); color:#94A3B8; border:1px solid #334155;}
 .qq-doc {display:block; box-sizing:border-box; height:40px; line-height:38px; white-space:nowrap; overflow:hidden;
-         text-overflow:ellipsis; font-size:0.85rem; padding:0 12px; margin-bottom:8px;
+         text-overflow:ellipsis; font-size:0.85rem; padding:0 12px; margin-bottom:0;
          border:1px solid #1F2937; border-radius:8px; background:#0B0F19;}
 .qq-col {font-size:0.8rem; color:#CBD5E1; line-height:1.55;}
 .qq-col code {color:#93C5FD; background:transparent; padding:0;}
@@ -157,6 +157,28 @@ def confirm_delete_all() -> None:
         st.rerun()
 
 
+@st.dialog("Remove document")
+def confirm_remove_doc(kind: str, name: str) -> None:
+    what = "table from the database" if kind == "table" else "document from search"
+    st.markdown(f"Remove this {what}? Other documents stay as they are.\n\n> {name}")
+    c1, c2 = st.columns(2)
+    if c1.button("Remove", type="primary", width="stretch"):
+        if kind == "table":
+            if ss.get("active_db") is not None:
+                ss.active_db.dispose()
+            drop_table(DB_PATH, name)
+            get_db.clear()
+            ss.sheet_tables = {f: [(t, r) for t, r in ts if t != name] for f, ts in ss.sheet_tables.items()}
+            ss.sheet_tables = {f: ts for f, ts in ss.sheet_tables.items() if ts}
+        else:
+            rag.delete_document(name)
+        ss.indexed_uploads = {k for k in ss.indexed_uploads if k[0] != name}
+        ss.uploader_key += 1  # clear the uploader so the removed file isn't re-added on the next rerun
+        st.rerun()
+    if c2.button("Cancel", width="stretch"):
+        st.rerun()
+
+
 # ---------------- sidebar ----------------
 with st.sidebar:
     st.markdown('<p class="qq-brand">⚡ Quick<span>Query</span> AI</p>', unsafe_allow_html=True)
@@ -194,6 +216,7 @@ with st.sidebar:
         except Exception as e:  # noqa: BLE001
             db_error = str(getattr(e, "orig", None) or e).splitlines()[0][:200]
 
+    ss.active_db = db if db is not None and db.dialect == "sqlite" else None
     st.markdown('<div class="qq-label">Schema & Knowledge</div>', unsafe_allow_html=True)
     if db:
         st.markdown(f'<span class="qq-badge ok">● Connected · {db_type} · {len(db.schema)} table(s)</span>',
@@ -243,13 +266,16 @@ with st.sidebar:
         st.rerun()
 
     docs = rag.list_documents()
-    for d in docs:  # one line: icon + name; long names end in "…", full name on hover
-        name = html.escape(d["name"])
-        st.markdown(f'<div class="qq-doc" title="{name}">📄 {name}</div>', unsafe_allow_html=True)
-    for tables in ss.sheet_tables.values():
-        for table, rows in tables:
-            st.markdown(f'<div class="qq-doc" title="{html.escape(table)} · {rows} rows">📊 {html.escape(table)}</div>',
-                        unsafe_allow_html=True)
+    # one line per document: icon + name (long names end in "…", full name on hover) + ✕ to remove
+    rows = [("pdf", d["name"], d["name"]) for d in docs]
+    rows += [("table", t, f"{t} · {n} rows") for ts in ss.sheet_tables.values() for t, n in ts]
+    for i, (kind, name, tip) in enumerate(rows):
+        c_d, c_x = st.columns([6, 1], gap="small", vertical_alignment="center")
+        icon = "📊" if kind == "table" else "📄"
+        c_d.markdown(f'<div class="qq-doc" title="{html.escape(tip)}">{icon} {html.escape(name)}</div>',
+                     unsafe_allow_html=True)
+        if c_x.button("✕", key=f"del_doc_{i}", help="Remove this document"):
+            confirm_remove_doc(kind, name)
     if ss.sheet_tables and db_type != "SQLite":
         st.caption("Spreadsheets are added to the SQLite demo database. Select SQLite to query them.")
     if not docs and not ss.sheet_tables:
