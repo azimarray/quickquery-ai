@@ -1,4 +1,5 @@
 """QuickQuery AI - Hybrid Text-to-SQL & Document Intelligence Engine (Streamlit UI)."""
+import html
 import io
 import os
 import re
@@ -38,10 +39,9 @@ st.markdown("""
     height:40px; min-height:40px; padding:0 12px; font-size:0.85rem; border-color:#1F2937; color:#CBD5E1;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {border:none; background:transparent;
     color:#64748B; height:40px; min-height:40px; padding:0 6px; font-size:0.85rem;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {min-height:40px; height:40px; padding:0 4px;
-    border-radius:8px; display:flex; align-items:center; justify-content:center;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] {display:none;}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {width:100%; height:32px; min-height:32px;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {min-height:40px; padding:4px 8px; border-radius:8px;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] span:not(:first-child),
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] small {display:none;}
 .qq-hint {color:#64748B; font-size:0.74rem; margin:-0.6rem 0 0.5rem 2px;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
@@ -53,10 +53,9 @@ st.markdown("""
 .qq-badge.ok {background:rgba(16,185,129,.12); color:#34D399; border:1px solid rgba(16,185,129,.35);}
 .qq-badge.err {background:rgba(239,68,68,.12); color:#F87171; border:1px solid rgba(239,68,68,.35);}
 .qq-badge.idle {background:rgba(148,163,184,.1); color:#94A3B8; border:1px solid #334155;}
-.qq-doc {display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; height:40px;
-         font-size:0.85rem; padding:0 12px; margin-bottom:8px;
+.qq-doc {display:block; box-sizing:border-box; height:40px; line-height:38px; white-space:nowrap; overflow:hidden;
+         text-overflow:ellipsis; font-size:0.85rem; padding:0 12px; margin-bottom:8px;
          border:1px solid #1F2937; border-radius:8px; background:#0B0F19;}
-.qq-doc span {color:#64748B;}
 .qq-col {font-size:0.8rem; color:#CBD5E1; line-height:1.55;}
 .qq-col code {color:#93C5FD; background:transparent; padding:0;}
 .qq-col i {color:#64748B; font-style:normal; font-size:0.72rem;}
@@ -241,12 +240,12 @@ with st.sidebar:
         st.rerun()
 
     docs = rag.list_documents()
-    for d in docs:
-        st.markdown(f'<div class="qq-doc">📄 {d["name"]}<span>{d["pages"]}p · {d["chunks"]} chunks</span></div>',
-                    unsafe_allow_html=True)
+    for d in docs:  # one line: icon + name; long names end in "…", full name on hover
+        name = html.escape(d["name"])
+        st.markdown(f'<div class="qq-doc" title="{name}">📄 {name}</div>', unsafe_allow_html=True)
     for tables in ss.sheet_tables.values():
         for table, rows in tables:
-            st.markdown(f'<div class="qq-doc">📊 {table}<span>{rows} rows · table</span></div>',
+            st.markdown(f'<div class="qq-doc" title="{html.escape(table)} · {rows} rows">📊 {html.escape(table)}</div>',
                         unsafe_allow_html=True)
     if ss.sheet_tables and db_type != "SQLite":
         st.caption("Spreadsheets are added to the SQLite demo database. Select SQLite to query them.")
