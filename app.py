@@ -33,6 +33,7 @@ st.markdown("""
 [data-testid="stSidebarUserContent"] {padding-top:0; margin-top:-60px;}
 [data-testid="stHeader"] {background:transparent;}
 [data-testid="InputInstructions"] {display:none;}
+.qq-saved {color:#34D399; font-size:0.74rem; margin:-0.6rem 0 0.4rem 2px;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left;
     min-height:0; padding:5px 10px; font-size:0.8rem; border-color:#1F2937; color:#CBD5E1;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] {margin-bottom:-8px;}
@@ -123,7 +124,9 @@ with st.sidebar:
     key_for = st.selectbox("API KEY", list(MODELS), index=list(MODELS).index(model_label),
                            format_func=lambda m: f"{m} key")
     ss.api_keys[key_for] = st.text_input(f"{key_for} key", value=ss.api_keys.get(key_for, ""),
-                                         type="password", label_visibility="collapsed")
+                                         type="password", label_visibility="collapsed").strip()
+    if ss.api_keys[key_for]:
+        st.markdown('<div class="qq-saved">✓ Key saved for this session</div>', unsafe_allow_html=True)
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
