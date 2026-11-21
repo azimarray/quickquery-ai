@@ -35,21 +35,26 @@ st.markdown("""
 [data-testid="InputInstructions"] {display:none;}
 .qq-saved {color:#34D399; font-size:0.74rem; margin:-0.6rem 0 0.4rem 2px;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left;
-    min-height:0; padding:5px 10px; font-size:0.8rem; border-color:#1F2937; color:#CBD5E1;}
-[data-testid="stSidebar"] [class*="st-key-hist_"] {margin-bottom:-8px;}
+    height:40px; min-height:40px; padding:0 12px; font-size:0.85rem; border-color:#1F2937; color:#CBD5E1;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {border:none; background:transparent;
-    color:#64748B; min-height:0; padding:2px 6px; font-size:0.8rem;}
+    color:#64748B; height:40px; min-height:40px; padding:0 6px; font-size:0.85rem;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {min-height:40px; height:40px; padding:0 4px;
+    border-radius:8px; display:flex; align-items:center; justify-content:center;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] {display:none;}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {width:100%; height:32px; min-height:32px;}
+.qq-hint {color:#64748B; font-size:0.74rem; margin:-0.6rem 0 0.5rem 2px;}
 [data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
            font-weight:600; margin:1.2rem 0 0.35rem;}
-.qq-badge {display:block; box-sizing:border-box; width:100%; padding:7px 14px; border-radius:8px; font-size:0.74rem; font-weight:500;
-           margin:0.2rem 0 0.5rem;}
+.qq-badge {display:flex; align-items:center; box-sizing:border-box; width:100%; height:40px; padding:0 12px;
+           border-radius:8px; font-size:0.85rem; font-weight:500; margin:0.2rem 0 0.5rem;}
 .qq-badge.ok {background:rgba(16,185,129,.12); color:#34D399; border:1px solid rgba(16,185,129,.35);}
 .qq-badge.err {background:rgba(239,68,68,.12); color:#F87171; border:1px solid rgba(239,68,68,.35);}
 .qq-badge.idle {background:rgba(148,163,184,.1); color:#94A3B8; border:1px solid #334155;}
-.qq-doc {display:flex; justify-content:space-between; font-size:0.8rem; padding:6px 9px; margin-bottom:5px;
+.qq-doc {display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; height:40px;
+         font-size:0.85rem; padding:0 12px; margin-bottom:8px;
          border:1px solid #1F2937; border-radius:8px; background:#0B0F19;}
 .qq-doc span {color:#64748B;}
 .qq-col {font-size:0.8rem; color:#CBD5E1; line-height:1.55;}
@@ -207,6 +212,7 @@ with st.sidebar:
 
     uploads = st.file_uploader("DOCUMENTS", type=["pdf", "csv", "xlsx"], accept_multiple_files=True,
                                key=f"uploader_{ss.uploader_key}")
+    st.markdown('<div class="qq-hint">PDF, CSV, XLSX · 200MB per file</div>', unsafe_allow_html=True)
     schema_changed = False
     for f in uploads or []:
         file_key = (f.name, f.size)
