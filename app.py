@@ -37,6 +37,7 @@ st.markdown("""
 [data-testid="stSidebarHeader"] {height:60px; min-height:60px; padding-top:0; padding-bottom:0; position:relative; z-index:2;}
 [data-testid="stSidebarUserContent"] {padding-top:0; margin-top:-60px;}
 [data-testid="stHeader"] {background:transparent;}
+[data-testid="InputInstructions"] {display:none;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
