@@ -17,18 +17,13 @@ except Exception:
     pass
 
 from backend.db_manager import DB_TYPES, DEFAULT_PORTS, DBManager, build_url  # noqa: E402
+from backend.demo_answers import STARTERS, instant_answer  # noqa: E402
 from backend.demo_seeder import DB_PATH, PDF_PATH, ensure_demo_data, reset_demo_data  # noqa: E402
-from backend.llm_router import DEFAULT_MODEL, KEY_ENV, MODELS, AgentResult, QueryAgent  # noqa: E402
+from backend.llm_router import DEFAULT_MODEL, KEY_ENV, MODELS, AgentResult, run_with_fallback  # noqa: E402
 from backend.rag_manager import RAGManager  # noqa: E402
 
 st.set_page_config(page_title="QuickQuery AI", page_icon="⚡", layout="wide")
 
-STARTERS = [
-    ("Hybrid · SQL + PDF", "Which employees qualify for full-time remote work per our handbook policy, "
-                           "and how many PTO days do they have left?"),
-    ("SQL only", "What is the average salary and headcount per department?"),
-    ("PDF only", "What is the maximum number of PTO days that can carry over to next year?"),
-]
 
 st.markdown("""
 <style>
@@ -102,6 +97,7 @@ ss.setdefault("api_keys", {})
 
 
 def friendly_error(e: Exception, model_label: str) -> str:
+    model_label = getattr(e, "qq_model", model_label)
     raw = str(e).strip()
     # Provider errors often arrive as a JSON blob - pull out the human-readable "message" field.
     found = re.search(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"', raw)
@@ -125,7 +121,6 @@ with st.sidebar:
                            format_func=lambda m: f"{m} key")
     ss.api_keys[key_for] = st.text_input(f"{key_for} key", value=ss.api_keys.get(key_for, ""),
                                          type="password", label_visibility="collapsed")
-    api_key = ss.api_keys.get(model_label, "")
     db_type = st.selectbox("DATABASE", list(DB_TYPES))
 
     if db_type == "SQLite":
@@ -273,7 +268,8 @@ def render_result(result: AgentResult, question: str = "", key: str = "0") -> No
     except Exception as e:  # noqa: BLE001 - a download problem must never hide the answer
         st.caption(f"Downloads unavailable: {e}")
     with st.expander("View SQL Query & PDF Sources"):
-        st.markdown(f"**Model:** {result.model} &nbsp;·&nbsp; **Steps:** {result.steps}")
+        backup = f" &nbsp;·&nbsp; backup used ({result.fallback_from} was unavailable)" if result.fallback_from else ""
+        st.markdown(f"**Model:** {result.model} &nbsp;·&nbsp; **Steps:** {result.steps}{backup}")
         st.markdown("**SQL executed**")
         if not result.sql_runs:
             st.caption("No SQL was needed for this answer.")
@@ -328,9 +324,13 @@ if prompt:
                     status.update(label=s + "…")
                     status.write(s)
                 try:
-                    agent = QueryAgent(model_label, db, rag, api_key=api_key.strip() or None)
-                    result = agent.run(prompt, history=history, on_step=on_step)
-                    status.update(label=f"Done · {result.steps} step(s)", state="complete")
+                    result = instant_answer(prompt, db, rag)
+                    if result is None:
+                        keys = {m: k.strip() for m, k in ss.api_keys.items() if k and k.strip()}
+                        result = run_with_fallback(model_label, db, rag, prompt, history=history,
+                                                   on_step=on_step, custom_keys=keys)
+                    done = "instant answer" if result.steps == 0 else f"{result.steps} step(s)"
+                    status.update(label=f"Done · {done}", state="complete")
                 except Exception as e:  # noqa: BLE001
                     result = None
                     error_text = friendly_error(e, model_label)

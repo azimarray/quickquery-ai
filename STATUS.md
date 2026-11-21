@@ -2,4 +2,4 @@
 - DONE: Agent loop with SQL + PDF tools, multi-step calls, 1-step SQL self-correction, read-only guardrail.
 - DONE: Demo seeding (30-row employees table + 5-page handbook PDF), auto-indexed on first run.
 - FIXED: Gemini 3.8 Flash stuck at step 1 (timeout 90s, no temp 0 for Gemini 3, keep thought signatures).
-- UI: API KEY box under LLM, models Claude/Gemini/GPT, CSV/Excel/PDF/Text downloads, new subtitle, title aligned. NEXT: test downloads live.
+- Groq GPT-OSS 120B is default (free); auto backup to next model with a key; 3 starter prompts answer instantly (no LLM). NEXT: add GROQ_API_KEY to Streamlit secrets.

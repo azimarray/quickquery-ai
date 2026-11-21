@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import date
@@ -18,18 +19,20 @@ litellm.drop_params = True          # ignore params a provider doesn't support
 litellm.suppress_debug_info = True
 
 MODELS = {
+    "GPT-OSS 120B (Groq)": "groq/openai/gpt-oss-120b",
     "Claude Sonnet 4.5": "anthropic/claude-sonnet-4-5",
     "Gemini 3.8 Flash": "gemini/gemini-3.8-flash",
     "GPT-4o": "gpt-4o",
 }
 KEY_ENV = {
+    "GPT-OSS 120B (Groq)": "GROQ_API_KEY",
     "Claude Sonnet 4.5": "ANTHROPIC_API_KEY",
     "GPT-4o": "OPENAI_API_KEY",
     "Gemini 3.8 Flash": "GEMINI_API_KEY",
 }
-DEFAULT_MODEL = "Claude Sonnet 4.5"
+DEFAULT_MODEL = "GPT-OSS 120B (Groq)"
 MAX_STEPS = 6        # LLM turns before we force a final answer
-ROWS_TO_LLM = 40     # rows sent back to the model (the UI shows all rows)
+ROWS_TO_LLM = 25     # rows sent back to the model (the UI shows all rows); small = fits free-tier limits
 
 TOOLS = [
     {
@@ -61,7 +64,7 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "What to look for, in natural language."},
-                    "top_k": {"type": "integer", "description": "Number of passages (1-8). Default 4."},
+                    "top_k": {"type": "integer", "description": "Number of passages (1-8). Default 3."},
                 },
                 "required": ["query"],
             },
@@ -87,6 +90,7 @@ class AgentResult:
     sql_runs: list[SQLRun] = field(default_factory=list)
     pdf_hits: list[dict] = field(default_factory=list)
     steps: int = 0
+    fallback_from: str | None = None    # model that failed before this one answered
 
 
 def _short_error(e: Exception) -> str:
@@ -109,11 +113,11 @@ class QueryAgent:
 
     def _complete(self, messages: list[dict], **kwargs):
         # Gemini 3 models can loop (look "stuck") below temperature 1.0, so leave them on their default.
-        if "gemini-3" not in self.model:
-            kwargs.setdefault("temperature", 0)
-        else:
-            # Gemini 3 "thinks" at a high level by default, which can take over a minute per step.
+        if "gemini-3" in self.model or "gpt-oss" in self.model:
+            # Reasoning models: a low thinking level keeps each step fast (Gemini 3 can loop at temperature 0).
             kwargs.setdefault("reasoning_effort", "low")
+        else:
+            kwargs.setdefault("temperature", 0)
         # Fail with a clear error after 90s instead of hanging forever.
         return litellm.completion(model=self.model, messages=messages, api_key=self.api_key,
                                   timeout=90, num_retries=1, **kwargs)
@@ -188,7 +192,7 @@ RULES
 
     def _search_pdf(self, query: str, top_k: int, result: AgentResult, on_step: Callable[[str], None]) -> str:
         on_step(f'Searching documents: "{query}"')
-        hits = self.rag.search(query, k=max(1, min(int(top_k or 4), 8)))
+        hits = self.rag.search(query, k=max(1, min(int(top_k or 3), 8)))
         seen = {(h["source"], h["page"], h["text"]) for h in result.pdf_hits}
         result.pdf_hits.extend(h for h in hits if (h["source"], h["page"], h["text"]) not in seen)
         if not hits:
@@ -203,7 +207,7 @@ RULES
         if name == "query_sql_database":
             return self._run_sql(args.get("sql", ""), result, on_step)
         if name == "search_pdf_documents":
-            return self._search_pdf(args.get("query", ""), args.get("top_k", 4), result, on_step)
+            return self._search_pdf(args.get("query", ""), args.get("top_k", 3), result, on_step)
         return json.dumps({"error": f"Unknown tool {name}"})
 
     # ---------- main loop ----------
@@ -236,3 +240,26 @@ RULES
         msg = self._complete(messages, tools=TOOLS, tool_choice="none").choices[0].message
         result.answer = (msg.content or "").strip() or "I could not finish within the step limit."
         return result
+
+
+def run_with_fallback(model_label: str, db: DBManager | None, rag: RAGManager, question: str,
+                      history: list[dict] | None = None, on_step: Callable[[str], None] = lambda _s: None,
+                      custom_keys: dict | None = None) -> AgentResult:
+    """Try the chosen model first, then every other model that has a key, so a demo never dead-ends."""
+    custom_keys = custom_keys or {}
+    order = [model_label] + [m for m in MODELS if m != model_label]
+    candidates = [m for m in order if custom_keys.get(m) or os.getenv(KEY_ENV[m])] or [model_label]
+    last_error: Exception | None = None
+    for i, label in enumerate(candidates):
+        try:
+            agent = QueryAgent(label, db, rag, api_key=custom_keys.get(label) or None)
+            result = agent.run(question, history=history, on_step=on_step)
+            if label != model_label:
+                result.fallback_from = model_label
+            return result
+        except Exception as e:  # noqa: BLE001 - any provider failure moves on to the next model
+            e.qq_model = label
+            last_error = e
+            if i + 1 < len(candidates):
+                on_step(f"{label} unavailable ({type(e).__name__}) - switching to {candidates[i + 1]}")
+    raise last_error
