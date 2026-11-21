@@ -33,9 +33,11 @@ STARTERS = [
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {background:#111827; border-right:1px solid #1F2937;}
-.block-container {max-width:1000px; padding-top:4.5rem;}
+.block-container {max-width:1000px; padding-top:60px;}
+[data-testid="stSidebarHeader"] {height:60px; min-height:60px; padding-top:0; padding-bottom:0;}
+[data-testid="stSidebarUserContent"] {padding-top:0;}
 [data-testid="stHeader"] {background:transparent;}
-.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0; padding-top:23px;}
+.qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; margin:0; padding-top:3px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
            font-weight:600; margin:1.2rem 0 0.35rem;}
