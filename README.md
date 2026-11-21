@@ -1,4 +1,6 @@
 # ⚡ QuickQuery AI
+[![tests](https://github.com/azimarray/quickquery-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/azimarray/quickquery-ai/actions/workflows/tests.yml)
+
 **Hybrid Text-to-SQL & Document Intelligence Engine** — ask one question, get an answer that combines your SQL database and your PDFs.
 
 Stack: Streamlit · LiteLLM (GPT-OSS 120B on Groq - free, default / Claude Sonnet 4.5 (Anthropic) / Gemini 3.8 Flash (Google)) · SQLAlchemy (SQLite / MySQL / PostgreSQL) · ChromaDB · pypdf.
@@ -20,6 +22,15 @@ cp .env.example .env                                 # add at least GROQ_API_KEY
 streamlit run app.py
 ```
 First launch creates the demo HR database and handbook PDF, and downloads ChromaDB's small embedding model (~80 MB, once).
+
+## Tests
+```bash
+pip install pytest
+pytest -v
+```
+35+ automated tests run on every push (GitHub Actions) with a scripted fake LLM, so no API key is needed:
+read-only SQL guard, demo data, instant starter answers, spreadsheet uploads, the agent loop (PDF + SQL tool calls),
+1-step SQL self-correction, backup-model fallback and 20-message memory.
 
 ## Deploy to Streamlit Community Cloud
 ```bash
