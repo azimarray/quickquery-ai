@@ -37,6 +37,9 @@ st.markdown("""
 [data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left;
     min-height:0; padding:5px 10px; font-size:0.8rem; border-color:#1F2937; color:#CBD5E1;}
 [data-testid="stSidebar"] [class*="st-key-hist_"] {margin-bottom:-8px;}
+[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {border:none; background:transparent;
+    color:#64748B; min-height:0; padding:2px 6px; font-size:0.8rem;}
+[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
@@ -119,23 +122,18 @@ def _short(q: str, n: int = 46) -> str:
     return q if len(q) <= n else q[:n - 2] + "…"
 
 
-@st.dialog("Delete history")
-def confirm_delete(indices: list[int]) -> None:
-    n = len(indices)
-    st.markdown(f"Delete **{n} {'query' if n == 1 else 'queries'}** and {'its answer' if n == 1 else 'their answers'}? "
-                "The AI will also forget them. This can't be undone.")
-    for i in sorted(indices)[:8]:
-        st.caption(f"• {_short(ss.messages[i]['content'], 70)}")
-    if n > 8:
-        st.caption(f"…and {n - 8} more")
+def delete_query(i: int) -> None:
+    """Remove a question and its answer (also from the AI's memory)."""
+    drop = {i, i + 1} if i + 1 < len(ss.messages) and ss.messages[i + 1]["role"] == "assistant" else {i}
+    ss.messages = [m for j, m in enumerate(ss.messages) if j not in drop]
+
+
+@st.dialog("Delete all history")
+def confirm_delete_all() -> None:
+    st.markdown("Delete **all questions and answers** from this session? The AI will also forget them.")
     c1, c2 = st.columns(2)
-    if c1.button("Delete", type="primary", width="stretch"):
-        drop = set()
-        for i in indices:
-            drop.add(i)
-            if i + 1 < len(ss.messages) and ss.messages[i + 1]["role"] == "assistant":
-                drop.add(i + 1)
-        ss.messages = [m for j, m in enumerate(ss.messages) if j not in drop]
+    if c1.button("Delete all", type="primary", width="stretch"):
+        ss.messages = []
         st.rerun()
     if c2.button("Cancel", width="stretch"):
         st.rerun()
@@ -244,18 +242,14 @@ with st.sidebar:
         st.caption("Your questions will appear here.")
     for i, m in reversed(past):
         q = m["content"]
-        if st.button(q if len(q) <= 46 else q[:44] + "…", key=f"hist_{i}", help=q, width="stretch"):
+        c_q, c_x = st.columns([6, 1], gap="small", vertical_alignment="center")
+        if c_q.button(_short(q, 40), key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
-    if past:
-        with st.expander("Delete history"):
-            picked = st.multiselect("Queries to delete", [i for i, _ in reversed(past)],
-                                    format_func=lambda i: _short(ss.messages[i]["content"]),
-                                    placeholder="Choose queries", label_visibility="collapsed")
-            c1, c2 = st.columns(2)
-            if c1.button("Delete selected", disabled=not picked, width="stretch"):
-                confirm_delete(picked)
-            if c2.button("Delete all", width="stretch"):
-                confirm_delete([i for i, _ in past])
+        if c_x.button("✕", key=f"del_{i}", help="Delete this question"):
+            delete_query(i)
+            st.rerun()
+    if past and st.button("Delete all", key="del_all", width="stretch"):
+        confirm_delete_all()
 
     if st.button("Reset Demo Data", width="stretch"):
         if db is not None and db.dialect == "sqlite":
