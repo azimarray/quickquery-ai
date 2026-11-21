@@ -3,4 +3,4 @@
 - DONE: Demo seeding (30-row employees table + 5-page handbook PDF), auto-indexed on first run.
 - FIXED: Gemini 3.8 Flash stuck at step 1 (timeout 90s, no temp 0 for Gemini 3, keep thought signatures).
 - Tests: 38 pytest tests run on every push (GitHub Actions, badge in README).
-- Models: Groq (default), Anthropic, Google; auto backup; instant starters; Query History with selective delete + confirm; DOCUMENTS uploader (PDF to search, CSV/XLSX to SQL tables); 20-message memory; per-document remove; AZIM Archive splash (static/splash.mp4).
+- Models: Groq (default), Anthropic, Google; auto backup; instant starters; Query History with selective delete + confirm; DOCUMENTS uploader (PDF to search, CSV/XLSX to SQL tables); 20-message memory; per-document remove.

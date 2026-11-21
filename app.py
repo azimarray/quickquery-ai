@@ -4,10 +4,14 @@ import io
 import os
 import re
 
+
 import pandas as pd
 import streamlit as st
-from fpdf import FPDF
-from dotenv import load_dotenv
+
+st.set_page_config(page_title="QuickQuery AI", page_icon="⚡", layout="wide")
+
+from dotenv import load_dotenv  # noqa: E402
+from fpdf import FPDF  # noqa: E402
 
 load_dotenv()
 try:  # Streamlit Community Cloud: expose secrets as env vars so LiteLLM finds the keys
@@ -22,9 +26,6 @@ from backend.demo_answers import STARTERS, instant_answer  # noqa: E402
 from backend.demo_seeder import DB_PATH, PDF_PATH, ensure_demo_data, reset_demo_data  # noqa: E402
 from backend.llm_router import DEFAULT_MODEL, KEY_ENV, MODELS, AgentResult, run_with_fallback  # noqa: E402
 from backend.rag_manager import RAGManager  # noqa: E402
-
-st.set_page_config(page_title="QuickQuery AI", page_icon="⚡", layout="wide")
-
 
 st.markdown("""
 <style>
