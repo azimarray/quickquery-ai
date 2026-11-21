@@ -102,7 +102,12 @@ ss.setdefault("api_keys", {})
 
 
 def friendly_error(e: Exception, model_label: str) -> str:
-    msg = str(e).strip().splitlines()[0][:300] if str(e).strip() else type(e).__name__
+    raw = str(e).strip()
+    # Provider errors often arrive as a JSON blob - pull out the human-readable "message" field.
+    found = re.search(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"', raw)
+    msg = found.group(1) if found else " ".join(raw.split())[:400] or type(e).__name__
+    status = getattr(e, "status_code", None)
+    msg = f"{type(e).__name__}{f' ({status})' if status else ''}: {msg}"
     if "auth" in type(e).__name__.lower() or "api key" in msg.lower() or "api_key" in msg.lower():
         return (f"**Missing or invalid API key for {model_label}.** Add `{KEY_ENV[model_label]}` to your `.env` "
                 f"(or Streamlit secrets), or paste a key in the API KEY box.")
