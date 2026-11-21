@@ -128,6 +128,17 @@ def delete_query(i: int) -> None:
     ss.messages = [m for j, m in enumerate(ss.messages) if j not in drop]
 
 
+@st.dialog("Delete question")
+def confirm_delete_one(i: int) -> None:
+    st.markdown(f"Delete this question and its answer? The AI will also forget it.\n\n> {_short(ss.messages[i]['content'], 120)}")
+    c1, c2 = st.columns(2)
+    if c1.button("Delete", type="primary", width="stretch"):
+        delete_query(i)
+        st.rerun()
+    if c2.button("Cancel", width="stretch"):
+        st.rerun()
+
+
 @st.dialog("Delete all history")
 def confirm_delete_all() -> None:
     st.markdown("Delete **all questions and answers** from this session? The AI will also forget them.")
@@ -246,8 +257,7 @@ with st.sidebar:
         if c_q.button(_short(q, 40), key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
         if c_x.button("✕", key=f"del_{i}", help="Delete this question"):
-            delete_query(i)
-            st.rerun()
+            confirm_delete_one(i)
     if past and st.button("Delete all", key="del_all", width="stretch"):
         confirm_delete_all()
 
