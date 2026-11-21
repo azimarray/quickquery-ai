@@ -35,10 +35,25 @@ st.markdown("""
 [data-testid="stHeader"] {background:transparent;}
 [data-testid="InputInstructions"] {display:none;}
 .qq-saved {color:#34D399; font-size:0.74rem; margin:-0.6rem 0 0.4rem 2px;}
-[data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left;
-    height:40px; min-height:40px; padding:0 12px; font-size:0.85rem; border-color:#1F2937; color:#CBD5E1;}
-[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {border:none; background:transparent;
-    color:#64748B; height:40px; min-height:40px; padding:0 6px; font-size:0.85rem;}
+/* One shared look for every sidebar bar: same background, border, corners and 40px height */
+[data-testid="stSidebar"] [data-baseweb="select"] > div:first-child,
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-testid="stExpander"] details,
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"],
+[data-testid="stSidebar"] .stButton > button,
+.qq-doc {background:#1F2937 !important; border:1px solid #374151 !important; border-radius:8px !important;}
+[data-testid="stSidebar"] [data-baseweb="base-input"] {background:transparent !important;}
+[data-testid="stSidebar"] [data-baseweb="input"]:focus-within {border-color:#3B82F6 !important;}
+[data-testid="stSidebar"] .stButton > button {height:40px; min-height:40px; color:#CBD5E1; font-size:0.85rem;}
+[data-testid="stSidebar"] .stButton > button:hover {border-color:#3B82F6 !important; color:#FFFFFF;}
+/* History and document rows: text part + ✕ part joined into one bar */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-del_"]) {gap:0 !important;}
+[data-testid="stSidebar"] [class*="st-key-hist_"] button {justify-content:flex-start; text-align:left; padding:0 12px;
+    border-right:none !important; border-radius:8px 0 0 8px !important;}
+[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button {width:100%; padding:0; color:#64748B;
+    border-left:none !important; border-radius:0 8px 8px 0 !important;}
+[data-testid="stSidebar"] [class*="st-key-hist_"] button:hover,
+[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {border-color:#374151 !important;}
 [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {flex-direction:row !important;
     align-items:center !important; justify-content:flex-start !important; gap:0 !important;
     min-height:40px !important; padding:4px !important; border-radius:8px;}
@@ -47,7 +62,7 @@ st.markdown("""
 [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {height:30px !important; min-height:30px !important;
     padding:0 12px !important;}
 .qq-hint {color:#64748B; font-size:0.74rem; margin:-0.6rem 0 0.5rem 2px;}
-[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171;}
+[data-testid="stSidebar"] [class*="st-key-del_"]:not(.st-key-del_all) button:hover {color:#F87171 !important;}
 .qq-brand {font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; line-height:40px; margin:0; padding-top:24px;}
 .qq-brand span {color:#3B82F6;}
 .qq-label {text-transform:uppercase; font-size:0.68rem; letter-spacing:0.08em; color:#64748B;
@@ -58,8 +73,8 @@ st.markdown("""
 .qq-badge.err {background:rgba(239,68,68,.12); color:#F87171; border:1px solid rgba(239,68,68,.35);}
 .qq-badge.idle {background:rgba(148,163,184,.1); color:#94A3B8; border:1px solid #334155;}
 .qq-doc {display:block; box-sizing:border-box; height:40px; line-height:38px; white-space:nowrap; overflow:hidden;
-         text-overflow:ellipsis; font-size:0.85rem; padding:0 12px; margin-bottom:0;
-         border:1px solid #1F2937; border-radius:8px; background:#0B0F19;}
+         text-overflow:ellipsis; font-size:0.85rem; color:#CBD5E1; padding:0 12px; margin:0;
+         border-right:none !important; border-radius:8px 0 0 8px !important;}
 .qq-col {font-size:0.8rem; color:#CBD5E1; line-height:1.55;}
 .qq-col code {color:#93C5FD; background:transparent; padding:0;}
 .qq-col i {color:#64748B; font-style:normal; font-size:0.72rem;}
