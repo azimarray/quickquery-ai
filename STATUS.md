@@ -2,4 +2,4 @@
 - DONE: Agent loop with SQL + PDF tools, multi-step calls, 1-step SQL self-correction, read-only guardrail.
 - DONE: Demo seeding (30-row employees table + 5-page handbook PDF), auto-indexed on first run.
 - FIXED: Gemini 3.8 Flash stuck at step 1 (timeout 90s, no temp 0 for Gemini 3, keep thought signatures).
-- Models: Groq (default), Anthropic, Google; auto backup; instant starters; sidebar Query History; AI remembers last 20 messages incl. SQL + PDF context.
+- Models: Groq (default), Anthropic, Google; auto backup; instant starters; Query History with selective delete + confirm; DOCUMENTS uploader (PDF to search, CSV/XLSX to SQL tables); 20-message memory.

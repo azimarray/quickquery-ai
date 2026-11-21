@@ -16,7 +16,7 @@ try:  # Streamlit Community Cloud: expose secrets as env vars so LiteLLM finds t
 except Exception:
     pass
 
-from backend.db_manager import DB_TYPES, DEFAULT_PORTS, DBManager, build_url  # noqa: E402
+from backend.db_manager import DB_TYPES, DEFAULT_PORTS, DBManager, build_url, import_spreadsheet  # noqa: E402
 from backend.demo_answers import STARTERS, instant_answer  # noqa: E402
 from backend.demo_seeder import DB_PATH, PDF_PATH, ensure_demo_data, reset_demo_data  # noqa: E402
 from backend.llm_router import DEFAULT_MODEL, KEY_ENV, MODELS, AgentResult, run_with_fallback  # noqa: E402
@@ -98,6 +98,7 @@ ss.setdefault("messages", [])
 ss.setdefault("indexed_uploads", set())
 ss.setdefault("uploader_key", 0)
 ss.setdefault("api_keys", {})
+ss.setdefault("sheet_tables", {})
 
 
 def friendly_error(e: Exception, model_label: str) -> str:
@@ -112,6 +113,32 @@ def friendly_error(e: Exception, model_label: str) -> str:
         return (f"**Missing or invalid API key for {model_label}.** Add `{KEY_ENV[model_label]}` to your `.env` "
                 f"(or Streamlit secrets), or paste a key in the API KEY box.")
     return f"**Something went wrong:** {msg}"
+
+
+def _short(q: str, n: int = 46) -> str:
+    return q if len(q) <= n else q[:n - 2] + "…"
+
+
+@st.dialog("Delete history")
+def confirm_delete(indices: list[int]) -> None:
+    n = len(indices)
+    st.markdown(f"Delete **{n} {'query' if n == 1 else 'queries'}** and {'its answer' if n == 1 else 'their answers'}? "
+                "The AI will also forget them. This can't be undone.")
+    for i in sorted(indices)[:8]:
+        st.caption(f"• {_short(ss.messages[i]['content'], 70)}")
+    if n > 8:
+        st.caption(f"…and {n - 8} more")
+    c1, c2 = st.columns(2)
+    if c1.button("Delete", type="primary", width="stretch"):
+        drop = set()
+        for i in indices:
+            drop.add(i)
+            if i + 1 < len(ss.messages) and ss.messages[i + 1]["role"] == "assistant":
+                drop.add(i + 1)
+        ss.messages = [m for j, m in enumerate(ss.messages) if j not in drop]
+        st.rerun()
+    if c2.button("Cancel", width="stretch"):
+        st.rerun()
 
 
 # ---------------- sidebar ----------------
@@ -169,25 +196,47 @@ with st.sidebar:
                                 for c in cols)
             st.markdown(f"**{table}**<div class='qq-col'>{lines}</div>", unsafe_allow_html=True)
 
-    uploads = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True,
+    uploads = st.file_uploader("DOCUMENTS", type=["pdf", "csv", "xlsx"], accept_multiple_files=True,
                                key=f"uploader_{ss.uploader_key}")
+    schema_changed = False
     for f in uploads or []:
         file_key = (f.name, f.size)
-        if file_key not in ss.indexed_uploads:
-            with st.spinner(f"Indexing {f.name}…"):
-                n = rag.index_pdf(f.getvalue(), f.name)
-            ss.indexed_uploads.add(file_key)
-            if n:
-                st.toast(f"Indexed {f.name} · {n} chunks")
-            else:
-                st.warning(f"No text found in {f.name} (scanned PDF?).")
+        if file_key in ss.indexed_uploads:
+            continue
+        ss.indexed_uploads.add(file_key)
+        try:
+            if f.name.lower().endswith(".pdf"):  # PDFs -> document search
+                with st.spinner(f"Indexing {f.name}…"):
+                    n = rag.index_pdf(f.getvalue(), f.name)
+                if n:
+                    st.toast(f"Indexed {f.name} · {n} chunks")
+                else:
+                    st.warning(f"No text found in {f.name} (scanned PDF?).")
+            else:  # spreadsheets -> new SQL tables in the demo SQLite database
+                with st.spinner(f"Adding {f.name} to the database…"):
+                    ss.sheet_tables[f.name] = import_spreadsheet(f.getvalue(), f.name, DB_PATH)
+                st.toast(f"Added {f.name} as table(s): " + ", ".join(t for t, _ in ss.sheet_tables[f.name]))
+                schema_changed = True
+        except Exception as e:  # noqa: BLE001
+            st.warning(f"Couldn't read {f.name}: {str(e).splitlines()[0][:150]}")
+    if schema_changed:  # reconnect so the new tables appear in the schema and the AI's context
+        if db is not None and db.dialect == "sqlite":
+            db.dispose()
+        get_db.clear()
+        st.rerun()
 
     docs = rag.list_documents()
     for d in docs:
         st.markdown(f'<div class="qq-doc">📄 {d["name"]}<span>{d["pages"]}p · {d["chunks"]} chunks</span></div>',
                     unsafe_allow_html=True)
-    if not docs:
-        st.caption("No PDFs indexed yet.")
+    for tables in ss.sheet_tables.values():
+        for table, rows in tables:
+            st.markdown(f'<div class="qq-doc">📊 {table}<span>{rows} rows · table</span></div>',
+                        unsafe_allow_html=True)
+    if ss.sheet_tables and db_type != "SQLite":
+        st.caption("Spreadsheets are added to the SQLite demo database. Select SQLite to query them.")
+    if not docs and not ss.sheet_tables:
+        st.caption("No documents added yet.")
 
     st.markdown('<div class="qq-label">Query History</div>', unsafe_allow_html=True)
     past = [(i, m) for i, m in enumerate(ss.messages) if m["role"] == "user"]
@@ -197,9 +246,16 @@ with st.sidebar:
         q = m["content"]
         if st.button(q if len(q) <= 46 else q[:44] + "…", key=f"hist_{i}", help=q, width="stretch"):
             ss.view_query = i
-    if past and st.button("Clear History", width="stretch"):
-        ss.messages = []
-        st.rerun()
+    if past:
+        with st.expander("Delete history"):
+            picked = st.multiselect("Queries to delete", [i for i, _ in reversed(past)],
+                                    format_func=lambda i: _short(ss.messages[i]["content"]),
+                                    placeholder="Choose queries", label_visibility="collapsed")
+            c1, c2 = st.columns(2)
+            if c1.button("Delete selected", disabled=not picked, width="stretch"):
+                confirm_delete(picked)
+            if c2.button("Delete all", width="stretch"):
+                confirm_delete([i for i, _ in past])
 
     if st.button("Reset Demo Data", width="stretch"):
         if db is not None and db.dialect == "sqlite":
@@ -208,7 +264,7 @@ with st.sidebar:
         rag.reset()
         reset_demo_data()
         index_handbook(rag)
-        ss.messages, ss.indexed_uploads = [], set()
+        ss.messages, ss.indexed_uploads, ss.sheet_tables = [], set(), {}
         ss.uploader_key += 1
         st.rerun()
 

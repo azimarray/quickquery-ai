@@ -1,7 +1,9 @@
 """SQL layer: multi-database connections, schema inspection and a read-only guardrail."""
 from __future__ import annotations
 
+import io
 import re
+import sqlite3
 from pathlib import Path
 
 import pandas as pd
@@ -141,3 +143,40 @@ class DBManager:
 
     def dispose(self) -> None:
         self.engine.dispose()
+
+
+# ---------- spreadsheet uploads ----------
+def _clean_name(name: str, fallback: str) -> str:
+    name = re.sub(r"\W+", "_", str(name)).strip("_").lower()
+    if not name or name[0].isdigit():
+        name = f"{fallback}_{name}".strip("_")
+    return name
+
+
+def import_spreadsheet(data: bytes, filename: str, sqlite_path: Path | str,
+                       protected: tuple[str, ...] = ("employees",)) -> list[tuple[str, int]]:
+    """Load a CSV/XLSX upload into the SQLite demo database, one table per sheet.
+    Returns [(table_name, row_count)]. Uses its own writable connection; queries stay read-only."""
+    stem = _clean_name(Path(filename).stem, "sheet")
+    if filename.lower().endswith(".csv"):
+        sheets = {stem: pd.read_csv(io.BytesIO(data))}
+    else:
+        book = pd.read_excel(io.BytesIO(data), sheet_name=None)
+        sheets = {stem if len(book) == 1 else f"{stem}_{_clean_name(n, 'sheet')}": df for n, df in book.items()}
+    created = []
+    with sqlite3.connect(str(sqlite_path)) as conn:
+        for table, df in sheets.items():
+            if table in protected:
+                table = f"upload_{table}"
+            cols, seen = [], set()
+            for i, c in enumerate(df.columns):
+                name = _clean_name(c, f"col_{i + 1}")
+                while name in seen:
+                    name += "_2"
+                seen.add(name)
+                cols.append(name)
+            df = df.dropna(how="all").convert_dtypes()
+            df.columns = cols
+            df.to_sql(table, conn, if_exists="replace", index=False)
+            created.append((table, len(df)))
+    return created
