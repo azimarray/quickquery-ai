@@ -220,13 +220,6 @@ def _plain(text: str) -> str:
     return text.encode("latin-1", "replace").decode("latin-1")
 
 
-def to_text(question: str, result: AgentResult, df: pd.DataFrame | None) -> bytes:
-    parts = [f"Question: {question}", "", f"Answer ({result.model}):", _plain(result.answer)]
-    if df is not None:
-        parts += ["", "Data:", df.to_string(index=False)]
-    return "\n".join(parts).encode("utf-8")
-
-
 def to_excel(df: pd.DataFrame) -> bytes:
     buf = io.BytesIO()
     df.to_excel(buf, index=False, sheet_name="Results")
@@ -256,7 +249,7 @@ def to_pdf(question: str, result: AgentResult, df: pd.DataFrame | None) -> bytes
 
 
 def render_downloads(question: str, result: AgentResult, df: pd.DataFrame | None, key: str) -> None:
-    cols = st.columns(4)
+    cols = st.columns(3)
     if df is not None:
         cols[0].download_button("CSV", df.to_csv(index=False).encode("utf-8"), "quickquery_results.csv",
                                 "text/csv", key=f"csv_{key}", icon=":material/download:", width="stretch")
@@ -265,8 +258,6 @@ def render_downloads(question: str, result: AgentResult, df: pd.DataFrame | None
                                 key=f"xlsx_{key}", icon=":material/download:", width="stretch")
     cols[2].download_button("PDF", to_pdf(question, result, df), "quickquery_answer.pdf", "application/pdf",
                             key=f"pdf_{key}", icon=":material/download:", width="stretch")
-    cols[3].download_button("Text", to_text(question, result, df), "quickquery_answer.txt", "text/plain",
-                            key=f"txt_{key}", icon=":material/download:", width="stretch")
 
 
 # ---------------- main workspace ----------------
